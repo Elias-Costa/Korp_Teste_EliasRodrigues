@@ -1,0 +1,224 @@
+<section class="page-shell">
+  <header class="page-header">
+    <div class="page-title">
+      <span class="eyebrow">Faturamento</span>
+      <h2>Cadastro e impressao de notas fiscais</h2>
+      <p>
+        Monte uma nota com varios itens, imprima quando estiver pronta e acompanhe o impacto no
+        estoque. A simulacao de falha ajuda a demonstrar o comportamento esperado do teste.
+      </p>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <article class="card stat-card">
+      <span>Notas abertas</span>
+      <strong>{{ openInvoicesCount() }}</strong>
+    </article>
+    <article class="card stat-card">
+      <span>Notas fechadas</span>
+      <strong>{{ printedInvoicesCount() }}</strong>
+    </article>
+    <article class="card stat-card">
+      <span>Saldo disponivel</span>
+      <strong>{{ availableStock() }}</strong>
+    </article>
+  </section>
+
+  @if (feedback(); as feedback) {
+    <section
+      class="banner"
+      [class.banner-success]="feedback.tone === 'success'"
+      [class.banner-error]="feedback.tone === 'error'"
+    >
+      <strong>{{ feedback.title }}</strong>
+      <span>{{ feedback.message }}</span>
+    </section>
+  }
+
+  <section class="card card-panel failure-card">
+    <div>
+      <h3>Simulacao de falha do inventory-service</h3>
+      <p>
+        Ative este modo para demonstrar que a impressao falha com feedback claro e sem fechar a
+        nota indevidamente.
+      </p>
+    </div>
+
+    <div class="failure-actions">
+      <span
+        class="status-pill"
+        [class.status-open]="isFailureModeEnabled()"
+        [class.status-closed]="!isFailureModeEnabled()"
+      >
+        {{ isFailureModeEnabled() ? 'Falha ligada' : 'Fluxo normal' }}
+      </span>
+
+      <button
+        class="button"
+        [class.button-danger]="isFailureModeEnabled()"
+        [class.button-secondary]="!isFailureModeEnabled()"
+        type="button"
+        [disabled]="isFailureModeUpdating()"
+        (click)="toggleFailureMode()"
+      >
+        {{
+          isFailureModeUpdating()
+            ? 'Atualizando...'
+            : isFailureModeEnabled()
+              ? 'Desativar simulacao'
+              : 'Ativar simulacao'
+        }}
+      </button>
+    </div>
+  </section>
+
+  <div class="content-grid invoices-grid">
+    <section class="card card-panel">
+      <h3>Nova nota fiscal</h3>
+      <p>Selecione os produtos e as quantidades para abrir uma nova nota.</p>
+
+      @if (products().length === 0 && !isLoading()) {
+        <div class="empty-state slim">
+          <strong>Nenhum produto disponivel</strong>
+          <span>Cadastre pelo menos um produto na tela anterior antes de criar notas.</span>
+        </div>
+      } @else {
+        <form [formGroup]="invoiceForm" class="form-grid" (ngSubmit)="submitInvoice()">
+          <div formArrayName="items" class="stack">
+            @for (itemForm of itemForms; track $index) {
+              <div class="item-card" [formGroup]="itemForm">
+                <div class="item-grid">
+                  <label class="field">
+                    <span>Produto</span>
+                    <select formControlName="productId">
+                      <option value="">Selecione um produto</option>
+                      @for (product of products(); track product.id) {
+                        <option [value]="product.id">
+                          {{ product.code }} • {{ product.description }} (saldo {{ product.stock }})
+                        </option>
+                      }
+                    </select>
+                    @if (
+                      itemForm.controls.productId.touched && itemForm.controls.productId.invalid
+                    ) {
+                      <small class="field-error">Escolha um produto valido.</small>
+                    }
+                  </label>
+
+                  <label class="field quantity-field">
+                    <span>Quantidade</span>
+                    <input type="number" min="1" formControlName="quantity" />
+                    @if (itemForm.controls.quantity.touched && itemForm.controls.quantity.invalid) {
+                      <small class="field-error">A quantidade precisa ser maior que zero.</small>
+                    }
+                  </label>
+                </div>
+
+                <button
+                  class="button button-secondary inline-button"
+                  type="button"
+                  [disabled]="itemForms.length === 1"
+                  (click)="removeItem($index)"
+                >
+                  Remover item
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="button-row">
+            <button class="button button-secondary" type="button" (click)="addItem()">
+              Adicionar item
+            </button>
+            <button
+              class="button button-primary"
+              type="submit"
+              [disabled]="isSaving() || products().length === 0"
+            >
+              {{ isSaving() ? 'Salvando nota...' : 'Criar nota fiscal' }}
+            </button>
+          </div>
+        </form>
+      }
+    </section>
+
+    <section class="card card-panel">
+      <div class="list-header">
+        <div>
+          <h3>Notas criadas</h3>
+          <p>Imprima apenas as que estiverem abertas.</p>
+        </div>
+        <button class="button button-secondary" type="button" (click)="reloadData()">
+          Atualizar
+        </button>
+      </div>
+
+      @if (isLoading()) {
+        <div class="empty-state">
+          <strong>Carregando dados...</strong>
+          <span>Buscando produtos, notas e status da simulacao de falha.</span>
+        </div>
+      } @else if (invoices().length === 0) {
+        <div class="empty-state">
+          <strong>Nenhuma nota criada</strong>
+          <span>Assim que voce criar a primeira nota, ela aparecera aqui.</span>
+        </div>
+      } @else {
+        <div class="list">
+          @for (invoice of invoices(); track invoice.id) {
+            <article class="invoice-card">
+              <div class="invoice-card-header">
+                <div>
+                  <div class="invoice-title-row">
+                    <h4>NF #{{ invoice.number }}</h4>
+                    <span
+                      class="status-pill"
+                      [class.status-open]="invoice.status === 'Open'"
+                      [class.status-closed]="invoice.status === 'Closed'"
+                    >
+                      {{ invoice.status }}
+                    </span>
+                  </div>
+                  <p>
+                    Criada em {{ invoice.createdAtUtc | date: 'dd/MM/yyyy HH:mm' }}
+                    @if (invoice.closedAtUtc) {
+                      • fechada em {{ invoice.closedAtUtc | date: 'dd/MM/yyyy HH:mm' }}
+                    }
+                  </p>
+                </div>
+
+                <button
+                  class="button button-primary"
+                  type="button"
+                  [disabled]="invoice.status !== 'Open' || isPrinting(invoice.id)"
+                  (click)="printInvoice(invoice.id)"
+                >
+                  {{
+                    isPrinting(invoice.id)
+                      ? 'Imprimindo...'
+                      : invoice.status === 'Closed'
+                        ? 'Ja impressa'
+                        : 'Imprimir nota'
+                  }}
+                </button>
+              </div>
+
+              <div class="invoice-items">
+                @for (item of invoice.items; track item.productId + item.productCode) {
+                  <div class="invoice-item-row">
+                    <div>
+                      <strong>{{ item.productCode }}</strong>
+                      <span>{{ item.productDescription }}</span>
+                    </div>
+                    <strong>x{{ item.quantity }}</strong>
+                  </div>
+                }
+              </div>
+            </article>
+          }
+        </div>
+      }
+    </section>
+  </div>
+</section>

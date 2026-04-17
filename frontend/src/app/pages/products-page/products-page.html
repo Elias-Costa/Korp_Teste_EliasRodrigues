@@ -1,0 +1,160 @@
+<section class="page-shell">
+  <header class="page-header">
+    <div class="page-title">
+      <span class="eyebrow">Estoque</span>
+      <h2>Cadastro de produtos</h2>
+      <p>
+        Cadastre os itens que poderao ser usados nas notas fiscais. O saldo salvo aqui sera
+        consumido automaticamente quando uma nota aberta for impressa.
+      </p>
+    </div>
+  </header>
+
+  <section class="stats-grid">
+    <article class="card stat-card">
+      <span>Produtos cadastrados</span>
+      <strong>{{ products().length }}</strong>
+    </article>
+    <article class="card stat-card">
+      <span>Saldo total em estoque</span>
+      <strong>{{ totalStock() }}</strong>
+    </article>
+    <article class="card stat-card">
+      <span>Ultimo status</span>
+      <strong>{{ isLoading() ? 'Atualizando' : 'Pronto' }}</strong>
+    </article>
+  </section>
+
+  @if (feedback(); as feedback) {
+    <section
+      class="banner"
+      [class.banner-success]="feedback.tone === 'success'"
+      [class.banner-error]="feedback.tone === 'error'"
+    >
+      <strong>{{ feedback.title }}</strong>
+      <span>{{ feedback.message }}</span>
+    </section>
+  }
+
+  <div class="content-grid">
+    <section class="card card-panel">
+      <h3>{{ isEditing() ? 'Editar produto' : 'Novo produto' }}</h3>
+      <p>
+        {{
+          isEditing()
+            ? 'Atualize codigo, descricao ou saldo do produto selecionado.'
+            : 'Preencha o basico: codigo, descricao e quantidade inicial em estoque.'
+        }}
+      </p>
+
+      @if (editingProduct(); as editingProduct) {
+        <div class="editing-banner">
+          <strong>Editando {{ editingProduct.code }}</strong>
+          <span>{{ editingProduct.description }}</span>
+        </div>
+      }
+
+      <form [formGroup]="productForm" class="form-grid" (ngSubmit)="submitProduct()">
+        <label class="field">
+          <span>Codigo</span>
+          <input type="text" formControlName="code" placeholder="Ex.: P001" />
+          @if (productForm.controls.code.touched && productForm.controls.code.invalid) {
+            <small class="field-error">Informe um codigo de ate 50 caracteres.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>Descricao</span>
+          <input type="text" formControlName="description" placeholder="Ex.: Notebook" />
+          @if (
+            productForm.controls.description.touched && productForm.controls.description.invalid
+          ) {
+            <small class="field-error">A descricao do produto e obrigatoria.</small>
+          }
+        </label>
+
+        <label class="field">
+          <span>{{ isEditing() ? 'Saldo atual' : 'Saldo inicial' }}</span>
+          <input type="number" min="0" formControlName="stock" />
+          @if (productForm.controls.stock.touched && productForm.controls.stock.invalid) {
+            <small class="field-error">Informe um saldo maior ou igual a zero.</small>
+          }
+        </label>
+
+        <div class="button-row">
+          <button class="button button-primary" type="submit" [disabled]="isSaving()">
+            {{
+              isSaving()
+                ? 'Salvando...'
+                : isEditing()
+                  ? 'Salvar alteracoes'
+                  : 'Cadastrar produto'
+            }}
+          </button>
+          @if (isEditing()) {
+            <button class="button button-secondary" type="button" (click)="cancelEditing()">
+              Cancelar edicao
+            </button>
+          }
+          <button class="button button-secondary" type="button" (click)="reloadProducts()">
+            Atualizar lista
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card card-panel">
+      <h3>Produtos disponiveis</h3>
+      <p>Lista usada depois na tela de notas fiscais.</p>
+
+      @if (isLoading()) {
+        <div class="empty-state">
+          <strong>Carregando produtos...</strong>
+          <span>Buscando os dados mais recentes do inventory-service.</span>
+        </div>
+      } @else if (products().length === 0) {
+        <div class="empty-state">
+          <strong>Nenhum produto cadastrado</strong>
+          <span>Comece criando o primeiro item pelo formulario ao lado.</span>
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Codigo</th>
+                <th>Descricao</th>
+                <th>Saldo</th>
+                <th>Criado em</th>
+                <th>Acoes</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (product of products(); track product.id) {
+                <tr [class.editing-row]="editingProduct()?.id === product.id">
+                  <td>
+                    <strong>{{ product.code }}</strong>
+                  </td>
+                  <td>{{ product.description }}</td>
+                  <td>{{ product.stock }}</td>
+                  <td>{{ product.createdAtUtc | date: 'dd/MM/yyyy HH:mm' }}</td>
+                  <td>
+                    <div class="row-actions">
+                      <button
+                        class="button button-secondary action-button"
+                        type="button"
+                        (click)="startEditing(product)"
+                      >
+                        {{ editingProduct()?.id === product.id ? 'Editando' : 'Editar' }}
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+  </div>
+</section>

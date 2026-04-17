@@ -1,0 +1,36 @@
+<div class="app-shell">
+  <header class="app-topbar card">
+    <div class="brand-block">
+      <span class="eyebrow">Angular + .NET 8</span>
+      <h1>Sistema de emissao de notas fiscais</h1>
+      <p>
+        Uma interface direta para cadastrar produtos, montar notas fiscais e testar o fluxo de
+        impressao com baixa de estoque.
+      </p>
+    </div>
+
+    <div class="workspace-block">
+      <nav class="nav-pills" aria-label="Navegacao principal">
+        <a
+          routerLink="/produtos"
+          routerLinkActive="active"
+          [routerLinkActiveOptions]="{ exact: true }"
+          class="nav-pill"
+        >
+          Produtos
+        </a>
+        <a routerLink="/notas-fiscais" routerLinkActive="active" class="nav-pill">
+          Notas fiscais
+        </a>
+      </nav>
+
+      <p class="workspace-note">
+        Frontend em Angular e APIs locais em <strong>5001</strong> e <strong>5002</strong>.
+      </p>
+    </div>
+  </header>
+
+  <main class="app-main">
+    <router-outlet />
+  </main>
+</div>

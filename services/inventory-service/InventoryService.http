@@ -1,0 +1,29 @@
+@InventoryService_HostAddress = http://localhost:5001
+
+GET {{InventoryService_HostAddress}}/health
+Accept: application/json
+
+###
+
+POST {{InventoryService_HostAddress}}/api/products
+Content-Type: application/json
+
+{
+  "code": "P001",
+  "description": "Notebook",
+  "stock": 10
+}
+
+###
+
+GET {{InventoryService_HostAddress}}/api/products
+Accept: application/json
+
+###
+
+POST {{InventoryService_HostAddress}}/api/simulation/failure-mode
+Content-Type: application/json
+
+{
+  "enabled": true
+}

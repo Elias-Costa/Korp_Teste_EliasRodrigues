@@ -1,0 +1,23 @@
+@BillingService_HostAddress = http://localhost:5002
+
+GET {{BillingService_HostAddress}}/health
+Accept: application/json
+
+###
+
+POST {{BillingService_HostAddress}}/api/invoices
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "00000000-0000-0000-0000-000000000000",
+      "quantity": 2
+    }
+  ]
+}
+
+###
+
+GET {{BillingService_HostAddress}}/api/invoices
+Accept: application/json

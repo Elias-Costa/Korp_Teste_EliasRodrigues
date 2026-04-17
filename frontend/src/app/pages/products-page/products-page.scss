@@ -1,0 +1,31 @@
+:host {
+  display: block;
+}
+
+.editing-banner {
+  display: grid;
+  gap: 0.2rem;
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border-radius: 18px;
+  background: rgba(255, 107, 61, 0.12);
+  border: 1px solid rgba(221, 75, 36, 0.18);
+}
+
+.editing-banner span {
+  color: var(--muted);
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.action-button {
+  padding: 0.55rem 0.8rem;
+  border-radius: 12px;
+}
+
+.editing-row {
+  background: rgba(255, 107, 61, 0.08);
+}
